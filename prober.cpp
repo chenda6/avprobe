@@ -130,11 +130,13 @@ bool Prober::findStreams()
         if(codecParam->codec_type == AVMEDIA_TYPE_VIDEO) 
         {
             mVideoStream = i;
+            mCodecParameters = mFormatCtx->streams[mVideoStream]->codecpar;
         } 
         else if(codecParam->codec_type == AVMEDIA_TYPE_AUDIO)
         {
             logging("Audio Codec: %d channels, sample rate %d", codecParam->channels, codecParam->sample_rate);
             mAudioStream = i;
+            mAudioCodecParameters = mFormatCtx->streams[mAudioStream]->codecpar;
         }
     }
 
@@ -146,7 +148,7 @@ bool Prober::findStreams()
 //------------------------------------------------------------------------------
 bool Prober::openCodec()
 {
-    auto codec = avcodec_find_decoder(mFormatCtx->streams[mVideoStream]->codecpar->codec_id);
+    auto codec = avcodec_find_decoder(mCodecParameters->codec_id);
     if(!codec)
     {
         std::cerr << "unsupported codec";
@@ -168,7 +170,7 @@ bool Prober::openCodec()
         return false;
     }
 
-    auto ret = avcodec_parameters_to_context(mCodecCtx, mFormatCtx->streams[mVideoStream]->codecpar);
+    auto ret = avcodec_parameters_to_context(mCodecCtx, mCodecParameters);
     if(ret != 0)
     {
         printf("Could not copy codec context.\n");

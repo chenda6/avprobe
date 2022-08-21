@@ -34,8 +34,8 @@ private:
 
     AVFormatContext *mFormatCtx{nullptr};
 
-    // AVCodecParameters *mCodecParameters{nullptr};
-    // AVCodecParameters *mAudioCodecParameters{nullptr};
+    AVCodecParameters *mCodecParameters{nullptr};
+    AVCodecParameters *mAudioCodecParameters{nullptr};
 
     AVCodecContext *mCodecCtx{nullptr};
     // AVCodecContext *mAudioCodecCtx{nullptr};
