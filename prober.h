@@ -2,6 +2,7 @@
 
 #include <string>
 #include <cstdint>
+#include <tuple>
 
 extern "C" 
 {
@@ -20,8 +21,7 @@ public:
     ~Prober();
 
     bool open(const char *path);
-    bool readPackets();
-    Packet *readNextPacket();
+    std::tuple<int, Packet*> readNextPacket();
 
 private:
     bool findStreams();

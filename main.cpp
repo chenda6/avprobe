@@ -11,14 +11,12 @@ int main(int argc, char *argv[])
         auto count(0);
         while(true)
         {
-            auto packet = prober.readNextPacket();
-            if(packet)
+            auto tuple = prober.readNextPacket();
+            if(std::get<0>(tuple) == 0)
             {
-                //printf("stream_index %d\n", packet->stream_index);
-                //printf("pts %d\n", packet->pts);
-                printf("pkt: %d dts %d\n", count++, packet->dts());
-                printf("pkt: %d stream %d\n", count++, packet->streamIndex());
-                //printf("duration %d\n", packet->duration);
+                auto packet(std::get<1>(tuple));
+                printf("pkt: %d stream: %d dts: %ld\n", count++, packet->streamIndex(), packet->dts());
+                delete packet;
             }
             else
             {

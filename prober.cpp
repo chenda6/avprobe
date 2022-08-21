@@ -35,7 +35,7 @@ bool Prober::open(const char *path)
 {
     if(avformat_open_input(&mFormatCtx, path, nullptr, nullptr) != 0) 
     {
-        std::cerr << "could not open file";
+        std::cerr << "prober could not open file";
         return false;
     }
 
@@ -44,20 +44,20 @@ bool Prober::open(const char *path)
 
     if(avformat_find_stream_info(mFormatCtx, nullptr) < 0) 
     {
-        std::cerr << "could not get stream info";
+        std::cerr << "prober could not get stream info";
         return false;
     }
     av_dump_format(mFormatCtx, 0, path, 0);  // [4]
 
     if(!findStreams())
     {
-        std::cerr << "could not find streams in input";
+        std::cerr << "prober could not find streams in input";
         return false;
     }
 
     if(!openCodec())
     {
-        std::cerr << "could not open codecs on input";
+        std::cerr << "prober could not open codecs on input";
         return false;
     }
 
@@ -111,57 +111,9 @@ static int decode_packet2(
             frame->pts,
             frame->key_frame,
             frame->coded_picture_number);
-
-
-        //const auto fps = av_q2d(stream->r_frame_rate);
-        //render(fps, codecContext, renderer, texture, frame, pict);
     }
 
     return 0;
-}
-
-//------------------------------------------------------------------------------
-//
-//------------------------------------------------------------------------------
-bool Prober::readPackets()
-{
-    AVPacket *packet(av_packet_alloc());
-    if(!packet)
-    {
-        std::cerr << "could not allocate memory for packet";
-        return false;
-    }
-
-    AVFrame *frame(av_frame_alloc());
-    if(!frame)
-    {
-        std::cerr << "could not allocate memory for frame";
-        return -1;
-    }
-
-    int response(0);
-    int numberPacketsProcessed(0);
-    while(av_read_frame(mFormatCtx, packet) >= 0)
-    {
-        if(packet->stream_index == mVideoStream) 
-        {
-            response = decode_packet2(
-                mFormatCtx->streams[mVideoStream],
-                mCodecCtx, 
-                packet, 
-                frame);
-
-            if(response < 0)
-            {
-                break;
-            }
-        }
-
-        av_packet_unref(packet);
-    }
-
-    av_frame_free(&frame);
-    av_packet_free(&packet);
 }
 
 //------------------------------------------------------------------------------
@@ -236,14 +188,15 @@ bool Prober::openCodec()
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
-Packet *Prober::readNextPacket()
+std::tuple<int, Packet*> Prober::readNextPacket()
 {
     AVPacket packet;
-    if(av_read_frame(mFormatCtx, &packet) >= 0)
+    auto res = av_read_frame(mFormatCtx, &packet);
+    if(res >= 0)
     {
         FFPacket *pkt(new FFPacket(packet));
-        return pkt;
-
+        return std::make_tuple(res, pkt);
     }
-    return nullptr;
+
+    return std::make_tuple(res, nullptr);
 }
