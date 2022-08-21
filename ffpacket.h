@@ -1,12 +1,10 @@
 #pragma once
 
-#include <string>
 #include <cstdint>
 
 extern "C" 
 {
 #include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
 }
 
 #include "packet.h"
@@ -22,6 +20,7 @@ public:
 
     virtual int64_t dts() const override;
     virtual int64_t pts() const override;
+    virtual int streamIndex() const override;
 
 private:
     AVPacket mPacket;

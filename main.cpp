@@ -17,6 +17,7 @@ int main(int argc, char *argv[])
                 //printf("stream_index %d\n", packet->stream_index);
                 //printf("pts %d\n", packet->pts);
                 printf("pkt: %d dts %d\n", count++, packet->dts());
+                printf("pkt: %d stream %d\n", count++, packet->streamIndex());
                 //printf("duration %d\n", packet->duration);
             }
             else
