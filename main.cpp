@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[])
 {
-    svs::Prober prober;
+    avprobe::Prober prober;
     if(prober.open(argv[1]))
     {
         #if 0

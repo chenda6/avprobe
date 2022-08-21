@@ -15,7 +15,7 @@ extern "C"
 
 #include "packet.h"
 
-namespace svs 
+namespace avprobe 
 {
 class Prober
 {

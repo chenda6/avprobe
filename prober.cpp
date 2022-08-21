@@ -4,7 +4,7 @@
 #include "prober.h"
 #include "ffpacket.h"
 
-using namespace svs;
+using namespace avprobe;
 
 //------------------------------------------------------------------------------
 //

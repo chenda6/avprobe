@@ -2,7 +2,7 @@
 #include <string>
 #include "ffpacket.h"
 
-using namespace svs;
+using namespace avprobe;
 
 
 //------------------------------------------------------------------------------
