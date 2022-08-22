@@ -14,17 +14,17 @@ extern "C"
 
 namespace avprobe 
 {
+struct ReadResult
+{
+    int status;
+    Packet *packet;
+};
+
 class Prober
 {
 public:
     Prober() = default;
     ~Prober();
-
-    struct ReadResult
-    {
-        int status;
-        Packet *packet;
-    };
 
     bool open(const char *path);
     ReadResult readNextPacket();

@@ -5,6 +5,7 @@
 #include "ffpacket.h"
 
 using avprobe::Prober;
+using avprobe::ReadResult;
 
 //------------------------------------------------------------------------------
 //
@@ -190,7 +191,7 @@ bool Prober::openCodec()
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
-Prober::ReadResult Prober::readNextPacket()
+ReadResult Prober::readNextPacket()
 {
     AVPacket packet;
     auto res = av_read_frame(mFormatCtx, &packet);
