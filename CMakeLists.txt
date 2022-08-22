@@ -33,6 +33,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   -std=c++17 -Wall -fpermissive -Wno-deprecated-declarations)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
+    "-Wl,-no-as-needed"
     PkgConfig::LIBAV
     #${SDL_LIBRARIES}
     #${SDL2_LIBRARIES}
