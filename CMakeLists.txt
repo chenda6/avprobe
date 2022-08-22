@@ -13,10 +13,17 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     #libavutil
 )
 
-add_executable(${PROJECT_NAME}
+#add_executable(${PROJECT_NAME}
+#    ffpacket.cpp
+#    prober.cpp
+#    main.cpp
+#)
+
+add_library(${PROJECT_NAME} SHARED
     ffpacket.cpp
     prober.cpp
-    main.cpp
+    avprobe_wrap.cxx
+    #main.cpp
 )
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")

@@ -1,7 +1,8 @@
 %module avprobe
 %{
-#include "prober.h"
 #include "packet.h"
+#include "ffpacket.h"
+#include "prober.h"
 %}
 
 %include <typemaps.i>
@@ -16,5 +17,6 @@ namespace std {
    %template(ByteVector) vector<char>;
 }
 
-%include "prober.h"
 %include "packet.h"
+%include "ffpacket.h"
+%include "prober.h"
