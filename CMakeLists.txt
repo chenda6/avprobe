@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.17)
 
 project(prober)
 
@@ -32,11 +32,15 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
 target_compile_options(${PROJECT_NAME} PRIVATE
   -std=c++17 -Wall -fpermissive -Wno-deprecated-declarations)
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PUBLIC
     PkgConfig::LIBAV
     #${SDL_LIBRARIES}
     #${SDL2_LIBRARIES}
 )
+
+include(GNUInstallDirs)
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 
 #include_directories(/usr/local/include)
 #link_directories(/usr/local/lib)

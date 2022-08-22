@@ -1,5 +1,7 @@
 %module avprobe
 %{
+#include <libavcodec/avcodec.h>
+//#include <libavformat/avformat.h>
 #include "packet.h"
 #include "ffpacket.h"
 #include "prober.h"
@@ -17,6 +19,8 @@ namespace std {
    %template(ByteVector) vector<char>;
 }
 
+%include <libavcodec/avcodec.h>
+//%include <libavformat/avformat.h>
 %include "packet.h"
 %include "ffpacket.h"
 %include "prober.h"
