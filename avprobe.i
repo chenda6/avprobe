@@ -1,6 +1,7 @@
 %module avprobe
 %{
 #include "prober.h"
+#include "packet.h"
 %}
 
 %include <typemaps.i>
@@ -16,3 +17,4 @@ namespace std {
 }
 
 %include "prober.h"
+%include "packet.h"
