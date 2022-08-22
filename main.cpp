@@ -5,25 +5,21 @@ int main(int argc, char *argv[])
     avprobe::Prober prober;
     if(prober.open(argv[1]))
     {
-        #if 0
-        prober.readPackets();
-        #else 
         auto count(0);
         while(true)
         {
-            auto tuple = prober.readNextPacket();
-            if(std::get<0>(tuple) == 0)
+            auto result = prober.readNextPacket();
+            if(result.status == 0)
             {
-                auto packet(std::get<1>(tuple));
+                auto packet(result.packet);
                 printf("pkt: %d stream: %d dts: %ld\n", count++, packet->streamIndex(), packet->dts());
                 delete packet;
             }
             else
             {
+                printf("status: %d\n", result.status);
                 break;
             }
         }
-        #endif
     }
-
 }

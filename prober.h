@@ -20,8 +20,14 @@ public:
     Prober() = default;
     ~Prober();
 
+    struct ReadResult
+    {
+        int status;
+        Packet *packet;
+    };
+
     bool open(const char *path);
-    std::tuple<int, Packet*> readNextPacket();
+    ReadResult readNextPacket();
 
 private:
     bool findStreams();

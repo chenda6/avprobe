@@ -4,7 +4,7 @@
 #include "prober.h"
 #include "ffpacket.h"
 
-using namespace avprobe;
+using avprobe::Prober;
 
 //------------------------------------------------------------------------------
 //
@@ -190,15 +190,21 @@ bool Prober::openCodec()
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
-std::tuple<int, Packet*> Prober::readNextPacket()
+Prober::ReadResult Prober::readNextPacket()
 {
     AVPacket packet;
     auto res = av_read_frame(mFormatCtx, &packet);
     if(res >= 0)
     {
         FFPacket *pkt(new FFPacket(packet));
-        return std::make_tuple(res, pkt);
+        return ReadResult{
+            .status = res,
+            .packet = pkt
+        };
     }
 
-    return std::make_tuple(res, nullptr);
+    return ReadResult{
+        .status = res,
+        .packet = nullptr
+    };
 }
