@@ -13,6 +13,11 @@
 package avprobe
 
 /*
+#cgo CXXFLAGS: -std=c++11 -I/usr/local/include
+#cgo LDFLAGS: -L/usr/local/lib -Wl,-rpath=/usr/local/lib -lavcodec -lavformat
+*/
+
+/*
 #define intgo swig_intgo
 typedef void *swig_voidp;
 
@@ -54,22 +59,19 @@ extern uintptr_t _wrap_Prober_readNextPacket_avprobe_d8c58f966354aa69(uintptr_t 
 */
 import "C"
 
-import "unsafe"
-import _ "runtime/cgo"
-import "sync"
-
+import (
+	_ "runtime/cgo"
+	"sync"
+	"unsafe"
+)
 
 type _ unsafe.Pointer
-
-
 
 var Swig_escape_always_false bool
 var Swig_escape_val interface{}
 
-
 type _swig_fnptr *byte
 type _swig_memberptr *byte
-
 
 type _ sync.Mutex
 
@@ -287,20 +289,20 @@ type Prober interface {
 	ReadNextPacket() (_swig_ret ReadResult)
 }
 
-
 type SwigcptrAVPacket uintptr
 type AVPacket interface {
-	Swigcptr() uintptr;
+	Swigcptr() uintptr
 }
+
 func (p SwigcptrAVPacket) Swigcptr() uintptr {
 	return uintptr(p)
 }
 
 type SwigcptrInt64_t uintptr
 type Int64_t interface {
-	Swigcptr() uintptr;
+	Swigcptr() uintptr
 }
+
 func (p SwigcptrInt64_t) Swigcptr() uintptr {
 	return uintptr(p)
 }
-
