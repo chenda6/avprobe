@@ -1,6 +1,6 @@
 #include "prober.h"
 
-int main111(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     avprobe::Prober prober;
     if(prober.open(argv[1]))

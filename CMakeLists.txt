@@ -41,6 +41,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 
 #include(GNUInstallDirs)
 #install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 
 
 #include_directories(/usr/local/include)
