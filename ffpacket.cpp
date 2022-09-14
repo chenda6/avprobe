@@ -8,6 +8,7 @@ using avprobe::FFPacket;
 //
 //------------------------------------------------------------------------------
 FFPacket::FFPacket(const AVPacket &packet)
+// TODO: see https://stackoverflow.com/questions/12929330/create-a-copy-of-an-avpacket-structure
 : mPacket(packet)
 {
 }
