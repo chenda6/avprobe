@@ -2,8 +2,7 @@
 #include <string>
 #include "ffpacket.h"
 
-using namespace avprobe;
-
+using avprobe::FFPacket;
 
 //------------------------------------------------------------------------------
 //
