@@ -46,6 +46,8 @@ extern void _wrap_ReadResult_packet_set_avprobe_6c983079c4703ea1(uintptr_t arg1,
 extern uintptr_t _wrap_ReadResult_packet_get_avprobe_6c983079c4703ea1(uintptr_t arg1);
 extern uintptr_t _wrap_new_ReadResult_avprobe_6c983079c4703ea1(void);
 extern void _wrap_delete_ReadResult_avprobe_6c983079c4703ea1(uintptr_t arg1);
+extern uintptr_t _wrap_new_InputStream_avprobe_6c983079c4703ea1(uintptr_t arg1, uintptr_t arg2);
+extern void _wrap_delete_InputStream_avprobe_6c983079c4703ea1(uintptr_t arg1);
 extern uintptr_t _wrap_new_Prober_avprobe_6c983079c4703ea1(void);
 extern void _wrap_delete_Prober_avprobe_6c983079c4703ea1(uintptr_t arg1);
 extern _Bool _wrap_Prober_open_avprobe_6c983079c4703ea1(uintptr_t arg1, swig_type_1 arg2);
@@ -242,6 +244,33 @@ type ReadResult interface {
 	GetPacket() (_swig_ret Packet)
 }
 
+type SwigcptrInputStream uintptr
+
+func (p SwigcptrInputStream) Swigcptr() uintptr {
+	return (uintptr)(p)
+}
+
+func (p SwigcptrInputStream) SwigIsInputStream() {
+}
+
+func NewInputStream(arg1 AVStream, arg2 AVCodecContext) (_swig_ret InputStream) {
+	var swig_r InputStream
+	_swig_i_0 := arg1.Swigcptr()
+	_swig_i_1 := arg2.Swigcptr()
+	swig_r = (InputStream)(SwigcptrInputStream(C._wrap_new_InputStream_avprobe_6c983079c4703ea1(C.uintptr_t(_swig_i_0), C.uintptr_t(_swig_i_1))))
+	return swig_r
+}
+
+func DeleteInputStream(arg1 InputStream) {
+	_swig_i_0 := arg1.Swigcptr()
+	C._wrap_delete_InputStream_avprobe_6c983079c4703ea1(C.uintptr_t(_swig_i_0))
+}
+
+type InputStream interface {
+	Swigcptr() uintptr
+	SwigIsInputStream()
+}
+
 type SwigcptrProber uintptr
 
 func (p SwigcptrProber) Swigcptr() uintptr {
@@ -301,6 +330,22 @@ type Int64_t interface {
 	Swigcptr() uintptr;
 }
 func (p SwigcptrInt64_t) Swigcptr() uintptr {
+	return uintptr(p)
+}
+
+type SwigcptrAVCodecContext uintptr
+type AVCodecContext interface {
+	Swigcptr() uintptr;
+}
+func (p SwigcptrAVCodecContext) Swigcptr() uintptr {
+	return uintptr(p)
+}
+
+type SwigcptrAVStream uintptr
+type AVStream interface {
+	Swigcptr() uintptr;
+}
+func (p SwigcptrAVStream) Swigcptr() uintptr {
 	return uintptr(p)
 }
 

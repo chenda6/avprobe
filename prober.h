@@ -2,7 +2,8 @@
 
 #include <string>
 #include <cstdint>
-#include <tuple>
+#include <vector>
+#include <memory>
 
 extern "C" 
 {
@@ -20,6 +21,23 @@ struct ReadResult
     Packet *packet;
 };
 
+class InputStream {
+public:
+    InputStream(const AVStream *stream, AVCodecContext *codecCtx)
+    : mStream(stream), mCodecCtx(codecCtx)
+    {
+    }
+
+    ~InputStream() 
+    {
+        avcodec_free_context(&this->mCodecCtx);
+    }
+
+private:
+    const AVStream *mStream;
+    AVCodecContext *mCodecCtx;
+};
+
 class Prober
 {
 public:
@@ -30,23 +48,12 @@ public:
     ReadResult readNextPacket();
 
 private:
-    bool findStreams();
-    bool openCodec();
+    bool openCodecs();
 
     std::string mUrl;
 
-    int mVideoStream {-1};
-    int mAudioStream {-1};
-
     AVFormatContext *mFormatCtx{nullptr};
 
-    AVCodecParameters *mCodecParameters{nullptr};
-    AVCodecParameters *mAudioCodecParameters{nullptr};
-
-    AVCodecContext *mCodecCtx{nullptr};
-    // AVCodecContext *mAudioCodecCtx{nullptr};
-
-    AVCodec *mCodec{nullptr};
-    AVCodec *mAudioCodec{nullptr};
+    std::vector<std::shared_ptr<InputStream>> mStreams;
 };
 }

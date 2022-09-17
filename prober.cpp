@@ -25,8 +25,6 @@ static void logging(const char *fmt, ...)
 //------------------------------------------------------------------------------
 Prober::~Prober()
 {
-    avformat_close_input(&mFormatCtx);
-    avcodec_free_context(&mCodecCtx);
 }
 
 //------------------------------------------------------------------------------
@@ -48,15 +46,11 @@ bool Prober::open(const char *path)
         std::cerr << "prober could not get stream info";
         return false;
     }
-    av_dump_format(mFormatCtx, 0, path, 0);  // [4]
 
-    if(!findStreams())
-    {
-        std::cerr << "prober could not find streams in input";
-        return false;
-    }
+    // TODO:
+    av_dump_format(mFormatCtx, 0, path, 0);
 
-    if(!openCodec())
+    if(!openCodecs())
     {
         std::cerr << "prober could not open codecs on input";
         return false;
@@ -68,121 +62,51 @@ bool Prober::open(const char *path)
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
-static int decode_packet2(
-    const AVStream *stream,
-    AVCodecContext *codecContext, 
-    AVPacket *pkt, 
-    AVFrame *frame)
-{
-    // printf("stream_index %d\n", pkt->stream_index);
-    // printf("pts %d\n", pkt->pts);
-    // printf("dts %d\n", pkt->dts);
-    //printf("dts_time", pkt->dts, &st->time_base);
-    //printf("duration %d\n", pkt->duration);
-    //printf("duration_time", pkt->duration, &st->time_base);
-    //print_val("size",             pkt->size, unit_byte_str);
-
-    auto ret = avcodec_send_packet(codecContext, pkt);
-    if(ret < 0)
-    {
-        printf("Error sending packet for decoding.");
-        return -1;
-    }
-
-    while(ret >= 0)
-    {
-        ret = avcodec_receive_frame(codecContext, frame);
-        // printf("receive frame: %d %d\n", frame->width, frame->height);
-        if(ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) 
-        {
-            break;
-        }
-        else if(ret < 0)
-        {
-            printf("Error while decoding packet.");
-            return -1;
-        }
-
-        logging(
-            "Frame %d (type=%c, size=%d bytes, format=%d) pts %d key_frame %d [DTS %d]",
-            codecContext->frame_number,
-            av_get_picture_type_char(frame->pict_type),
-            frame->pkt_size,
-            frame->format,
-            frame->pts,
-            frame->key_frame,
-            frame->coded_picture_number);
-    }
-
-    return 0;
-}
-
-//------------------------------------------------------------------------------
-//
-//------------------------------------------------------------------------------
-bool Prober::findStreams()
+bool Prober::openCodecs()
 {
     for(unsigned i = 0; i < mFormatCtx->nb_streams; i++)
     {
-        auto codecParam = mFormatCtx->streams[i]->codecpar;
-        logging("AVStream->time_base before open coded %d/%d", mFormatCtx->streams[i]->time_base.num, mFormatCtx->streams[i]->time_base.den);
-        logging("AVStream->r_frame_rate before open coded %d/%d", mFormatCtx->streams[i]->r_frame_rate.num, mFormatCtx->streams[i]->r_frame_rate.den);
+        const auto stream = mFormatCtx->streams[i];
 
-        if(codecParam->codec_type == AVMEDIA_TYPE_VIDEO) 
+        logging("AVStream->time_base before open coded %d/%d", stream->time_base.num, stream->time_base.den);
+        logging("AVStream->r_frame_rate before open coded %d/%d", stream->r_frame_rate.num, stream->r_frame_rate.den);
+
+        if(stream->codecpar->codec_id == AV_CODEC_ID_PROBE) 
         {
-            mVideoStream = i;
-            mCodecParameters = mFormatCtx->streams[mVideoStream]->codecpar;
-        } 
-        else if(codecParam->codec_type == AVMEDIA_TYPE_AUDIO)
-        {
-            logging("Audio Codec: %d channels, sample rate %d", codecParam->channels, codecParam->sample_rate);
-            mAudioStream = i;
-            mAudioCodecParameters = mFormatCtx->streams[mAudioStream]->codecpar;
+            std::cerr << "Failed to probe codec for input stream " << stream->index << std::endl;
+            mStreams.emplace_back(std::make_shared<InputStream>(nullptr, nullptr));
+            continue;
         }
-    }
 
-    return mAudioStream != -1 || mVideoStream != -1;
-}
+        auto codec = avcodec_find_decoder(stream->codecpar->codec_id);
+        if(!codec)
+        {
+            std::cerr 
+                << "Unsupported codec with id " << stream->codecpar->codec_id
+                << " for input stream " << stream->index << std::endl;
+            return false;
+        }
 
-//------------------------------------------------------------------------------
-//
-//------------------------------------------------------------------------------
-bool Prober::openCodec()
-{
-    auto codec = avcodec_find_decoder(mCodecParameters->codec_id);
-    if(!codec)
-    {
-        std::cerr << "unsupported codec";
-        return false;
-    }
+        auto codecCtx = avcodec_alloc_context3(codec);
+        if(!codecCtx)
+        {
+            std::cerr << "could not allocate memory for Codec Context";
+            return false;
+        }
 
-    /**
-    * Note that we must not use the AVCodecContext from the video stream
-    * directly! So we have to use avcodec_copy_context() to copy the
-    * context to a new location (after allocating memory for it, of
-    * course).
-    */
+        if(avcodec_parameters_to_context(codecCtx, stream->codecpar) < 0)
+        {
+            printf("Could not copy codec context.\n");
+            return false;
+        }
 
-    // Copy context
-    mCodecCtx = avcodec_alloc_context3(codec);
-    if(!mCodecCtx)
-    {
-        std::cerr << "could not allocate memory for Codec Context";
-        return false;
-    }
+        if(avcodec_open2(codecCtx, codec, nullptr) < 0)
+        {
+            std::cerr << "Failed to open codec";
+            return false;
+        }
 
-    auto ret = avcodec_parameters_to_context(mCodecCtx, mCodecParameters);
-    if(ret != 0)
-    {
-        printf("Could not copy codec context.\n");
-        return false;
-    }
-
-    // Open codec
-    if(avcodec_open2(mCodecCtx, codec, nullptr) < 0)
-    {
-        std::cerr << "Failed to open Codec";
-        return false;
+        mStreams.emplace_back(std::make_shared<InputStream>(stream, codecCtx));
     }
 
     return true;
