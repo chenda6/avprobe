@@ -17,21 +17,15 @@ namespace avprobe
 {
 struct ReadResult
 {
-    int status;
-    Packet *packet;
+    int status {-1};
+    Packet *packet {nullptr};
 };
 
-class InputStream {
+class InputStream 
+{
 public:
-    InputStream(const AVStream *stream, AVCodecContext *codecCtx)
-    : mStream(stream), mCodecCtx(codecCtx)
-    {
-    }
-
-    ~InputStream() 
-    {
-        avcodec_free_context(&this->mCodecCtx);
-    }
+    InputStream(const AVStream *stream, AVCodecContext *codecCtx);
+    ~InputStream();
 
 private:
     const AVStream *mStream;

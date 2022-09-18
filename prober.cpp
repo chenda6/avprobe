@@ -6,6 +6,23 @@
 
 using avprobe::Prober;
 using avprobe::ReadResult;
+using avprobe::InputStream;
+
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
+InputStream::InputStream(const AVStream *stream, AVCodecContext *codecCtx)
+: mStream(stream), mCodecCtx(codecCtx)
+{
+}
+
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
+InputStream::~InputStream() 
+{
+    avcodec_free_context(&this->mCodecCtx);
+}
 
 //------------------------------------------------------------------------------
 //
