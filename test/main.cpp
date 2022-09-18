@@ -1,15 +1,16 @@
+#include <iostream>
 #include "prober.h"
 
-int main(int argc, char *argv[])
+static void probeFile(const char *fname)
 {
     avprobe::Prober prober;
-    if(prober.open(argv[1]))
+    if(prober.open(fname))
     {
         auto count(0);
-        while(true)
+        while (true)
         {
             auto result = prober.readNextPacket();
-            if(result.status == 0)
+            if (result.status == 0)
             {
                 auto packet(result.packet);
                 printf("pkt: %d stream: %d dts: %ld\n", count++, packet->streamIndex(), packet->dts());
@@ -21,5 +22,16 @@ int main(int argc, char *argv[])
                 break;
             }
         }
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    const char *fname = argv[1];
+    while(true)
+    {
+
+        std::cout << "Probing: " << fname << std::endl;
+        probeFile(fname);
     }
 }
