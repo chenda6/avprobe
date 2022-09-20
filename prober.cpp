@@ -8,6 +8,21 @@ using avprobe::Prober;
 using avprobe::ReadResult;
 using avprobe::InputStream;
 
+static bool gErrorOccurred = false;
+
+//------------------------------------------------------------------------------
+// Used to trap error messages/conditions when certain errors, e.g., deocding,
+// do not get propagated back up the call stack. 
+//------------------------------------------------------------------------------
+void my_log_callback(void *ptr, int level, const char *fmt, va_list vargs)
+{
+    if(level <= AV_LOG_ERROR)
+    {
+        vprintf(fmt, vargs);
+        gErrorOccurred = true;
+    }
+}
+
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
@@ -40,6 +55,14 @@ static void logging(const char *fmt, ...)
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
+Prober::Prober()
+{
+    av_log_set_callback(my_log_callback);
+}
+
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
 Prober::~Prober()
 {
     avformat_close_input(&mFormatCtx);
@@ -48,8 +71,18 @@ Prober::~Prober()
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
+void Prober::setLogLevel(int level)
+{
+    mLogLevel = level;
+}
+
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
 bool Prober::open(const char *path)
 {
+    av_log_set_level(mLogLevel); 
+
     if(avformat_open_input(&mFormatCtx, path, nullptr, nullptr) != 0) 
     {
         std::cerr << "prober could not open file";
@@ -133,13 +166,94 @@ bool Prober::openCodecs()
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
+int Prober::parse(AVPacket &pkt) 
+{
+    const auto stream = mFormatCtx->streams[pkt.stream_index];
+    const auto avctx = mStreams[pkt.stream_index]->getAVCodecContext();
+    auto parser = av_parser_init(stream->codecpar->codec_id);
+    if(!parser) 
+    {
+        std::cerr << "parser not found\n";
+        exit(1);
+    }
+
+    AVPacket temp;
+    auto res = av_parser_parse2(
+                parser, avctx,
+                &temp.data, &temp.size, pkt.data, pkt.size,
+                pkt.pts, pkt.dts, pkt.pos);
+
+    av_parser_close(parser);
+    return gErrorOccurred ? AVERROR_INVALIDDATA : res;
+}
+
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
+int Prober::decode(AVPacket &packet) 
+{
+    int res(0);
+    auto stream = mStreams[packet.stream_index];
+    if(stream)
+    {
+        auto codecCtx = stream.get()->getAVCodecContext();
+        auto res = avcodec_send_packet(codecCtx, &packet);
+        if (res == AVERROR(EAGAIN))
+        {
+            res = 0;
+        }
+
+        AVFrame *frame = av_frame_alloc();
+        // while (res >= 0)
+        while (res >= 0)
+        {
+            res = avcodec_receive_frame(codecCtx, frame);
+            if(res >= 0)
+            {
+                const auto codecId = stream->getAVStream()->codecpar->codec_id;
+
+                if(avcodec_get_type(codecId) == AVMEDIA_TYPE_VIDEO)
+                {
+                    printf("decoded frame: %s %d %d\n", avcodec_get_name(codecId), frame->width, frame->height);
+                }
+                else if(avcodec_get_type(codecId) == AVMEDIA_TYPE_AUDIO)
+                {
+                    printf("decoded frame: %s %u\n", avcodec_get_name(codecId), frame->channels);
+                }
+            }
+            if (res == AVERROR(EAGAIN) || res == AVERROR_EOF)
+            {
+                res = 0;
+                // std::cout << "EAGAIN | EOF\n";
+                break;
+            }
+            else if (res < 0)
+            {
+                std::cout << "ERROR\n";
+            }
+        }
+        av_free(frame);
+    }
+
+    return gErrorOccurred ? AVERROR_INVALIDDATA : res;
+}
+
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
 ReadResult Prober::readNextPacket()
 {
     AVPacket packet;
+    mFormatCtx->flags = 0;
     auto res = av_read_frame(mFormatCtx, &packet);
+    std::cout << "flags: " << mFormatCtx->flags << std::endl;
     if(res >= 0)
     {
         FFPacket *pkt(new FFPacket(packet));
+
+        //res = decode(packet);
+        res = parse(packet);
+
         return ReadResult{
             .status = res,
             .packet = pkt

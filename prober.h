@@ -27,6 +27,16 @@ public:
     InputStream(const AVStream *stream, AVCodecContext *codecCtx);
     ~InputStream();
 
+    const AVStream *getAVStream() const
+    {
+        return mStream;
+    }
+
+    AVCodecContext *getAVCodecContext() 
+    {
+        return mCodecCtx;
+    }
+
 private:
     const AVStream *mStream;
     AVCodecContext *mCodecCtx;
@@ -35,11 +45,15 @@ private:
 class Prober
 {
 public:
-    Prober() = default;
+    Prober();
     ~Prober();
 
+    void  setLogLevel(int);
     bool open(const char *path);
     ReadResult readNextPacket();
+
+    int decode(AVPacket &packet);
+    int parse(AVPacket &packet);
 
 private:
     bool openCodecs();
@@ -49,5 +63,7 @@ private:
     AVFormatContext *mFormatCtx{nullptr};
 
     std::vector<std::shared_ptr<InputStream>> mStreams;
+
+    int mLogLevel {AV_LOG_ERROR};
 };
 }

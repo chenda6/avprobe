@@ -1,6 +1,7 @@
 #include <iostream>
 #include "prober.h"
 
+
 static void probeFile(const char *fname)
 {
     avprobe::Prober prober;
@@ -10,15 +11,15 @@ static void probeFile(const char *fname)
         while (true)
         {
             auto result = prober.readNextPacket();
-            if (result.status == 0)
+            if (result.status >= 0)
             {
                 auto packet(result.packet);
-                printf("pkt: %d stream: %d dts: %ld\n", count++, packet->streamIndex(), packet->dts());
+                printf("read pkt: %d stream: %d dts: %lld\n", count++, packet->streamIndex(), packet->dts());
                 delete packet;
             }
             else
             {
-                printf("status: %d\n", result.status);
+                printf("status: %s\n", av_err2str(result.status));
                 break;
             }
         }
@@ -28,9 +29,8 @@ static void probeFile(const char *fname)
 int main(int argc, char *argv[])
 {
     const char *fname = argv[1];
-    while(true)
+    //while(true)
     {
-
         std::cout << "Probing: " << fname << std::endl;
         probeFile(fname);
     }
