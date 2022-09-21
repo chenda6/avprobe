@@ -135,7 +135,8 @@ bool Prober::openCodecs()
             std::cerr 
                 << "Unsupported codec with id " << stream->codecpar->codec_id
                 << " for input stream " << stream->index << std::endl;
-            return false;
+            mStreams.emplace_back(std::make_shared<InputStream>(nullptr, nullptr));
+            continue;
         }
 
         auto codecCtx = avcodec_alloc_context3(codec);
@@ -170,11 +171,15 @@ int Prober::parse(AVPacket &pkt)
 {
     const auto stream = mFormatCtx->streams[pkt.stream_index];
     const auto avctx = mStreams[pkt.stream_index]->getAVCodecContext();
+    if(!avctx)
+    {
+        return 0;
+    }
     auto parser = av_parser_init(stream->codecpar->codec_id);
     if(!parser) 
     {
-        std::cerr << "parser not found\n";
-        exit(1);
+        // std::cerr << "parser not found\n";
+        return 0;
     }
 
     AVPacket temp;
