@@ -24,7 +24,7 @@ struct ReadResult
 class InputStream 
 {
 public:
-    InputStream(const AVStream *stream, AVCodecContext *codecCtx);
+    InputStream(const AVStream *stream, AVCodecContext *codecCtx, AVCodecParserContext *parserCtx);
     ~InputStream();
 
     const AVStream *getAVStream() const
@@ -37,9 +37,11 @@ public:
         return mCodecCtx;
     }
 
+public:
+    AVCodecParserContext *mParserCxt {nullptr};
 private:
-    const AVStream *mStream;
-    AVCodecContext *mCodecCtx;
+    const AVStream *mStream {nullptr};
+    AVCodecContext *mCodecCtx {nullptr};
 };
 
 class Prober

@@ -26,8 +26,11 @@ void my_log_callback(void *ptr, int level, const char *fmt, va_list vargs)
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
-InputStream::InputStream(const AVStream *stream, AVCodecContext *codecCtx)
-: mStream(stream), mCodecCtx(codecCtx)
+InputStream::InputStream(
+        const AVStream *stream, 
+        AVCodecContext *codecCtx, 
+        AVCodecParserContext *parserCtx)
+: mStream(stream), mCodecCtx(codecCtx), mParserCxt(parserCtx)
 {
 }
 
@@ -37,6 +40,7 @@ InputStream::InputStream(const AVStream *stream, AVCodecContext *codecCtx)
 InputStream::~InputStream() 
 {
     avcodec_free_context(&this->mCodecCtx);
+    av_parser_close(mParserCxt);
 }
 
 //------------------------------------------------------------------------------
@@ -89,8 +93,7 @@ bool Prober::open(const char *path)
         return false;
     }
 
-    logging("format %s, duration %lld us, bit_rate %lld", 
-        mFormatCtx->iformat->name, mFormatCtx->duration, mFormatCtx->bit_rate);
+    //logging("format %s, duration %lld us, bit_rate %lld", mFormatCtx->iformat->name, mFormatCtx->duration, mFormatCtx->bit_rate);
 
     if(avformat_find_stream_info(mFormatCtx, nullptr) < 0) 
     {
@@ -99,7 +102,7 @@ bool Prober::open(const char *path)
     }
 
     // TODO:
-    av_dump_format(mFormatCtx, 0, path, 0);
+    //av_dump_format(mFormatCtx, 0, path, 0);
 
     if(!openCodecs())
     {
@@ -119,13 +122,13 @@ bool Prober::openCodecs()
     {
         const auto stream = mFormatCtx->streams[i];
 
-        logging("AVStream->time_base before open coded %d/%d", stream->time_base.num, stream->time_base.den);
-        logging("AVStream->r_frame_rate before open coded %d/%d", stream->r_frame_rate.num, stream->r_frame_rate.den);
+        // logging("AVStream->time_base before open coded %d/%d", stream->time_base.num, stream->time_base.den);
+        // logging("AVStream->r_frame_rate before open coded %d/%d", stream->r_frame_rate.num, stream->r_frame_rate.den);
 
         if(stream->codecpar->codec_id == AV_CODEC_ID_PROBE) 
         {
             std::cerr << "Failed to probe codec for input stream " << stream->index << std::endl;
-            mStreams.emplace_back(std::make_shared<InputStream>(nullptr, nullptr));
+            mStreams.emplace_back(std::make_shared<InputStream>(nullptr, nullptr, nullptr));
             continue;
         }
 
@@ -135,7 +138,7 @@ bool Prober::openCodecs()
             std::cerr 
                 << "Unsupported codec with id " << stream->codecpar->codec_id
                 << " for input stream " << stream->index << std::endl;
-            mStreams.emplace_back(std::make_shared<InputStream>(nullptr, nullptr));
+            mStreams.emplace_back(std::make_shared<InputStream>(nullptr, nullptr, nullptr));
             continue;
         }
 
@@ -158,7 +161,16 @@ bool Prober::openCodecs()
             return false;
         }
 
-        mStreams.emplace_back(std::make_shared<InputStream>(stream, codecCtx));
+        auto parser = av_parser_init(stream->codecpar->codec_id);
+        if(!parser) 
+        {
+            std::cerr << "parser not found\n";
+            mStreams.emplace_back(std::make_shared<InputStream>(nullptr, nullptr, nullptr));
+            continue;
+        }
+        parser->flags = PARSER_FLAG_COMPLETE_FRAMES;
+
+        mStreams.emplace_back(std::make_shared<InputStream>(stream, codecCtx, parser));
     }
 
     return true;
@@ -170,15 +182,22 @@ bool Prober::openCodecs()
 int Prober::parse(AVPacket &pkt) 
 {
     const auto stream = mFormatCtx->streams[pkt.stream_index];
+
+    if(stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO && stream->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
+    {
+        return 0;
+    }
+
     const auto avctx = mStreams[pkt.stream_index]->getAVCodecContext();
     if(!avctx)
     {
         return 0;
     }
-    auto parser = av_parser_init(stream->codecpar->codec_id);
+
+    auto parser = mStreams[pkt.stream_index]->mParserCxt;
     if(!parser) 
     {
-        // std::cerr << "parser not found\n";
+        std::cerr << "parser not found\n";
         return 0;
     }
 
@@ -188,7 +207,6 @@ int Prober::parse(AVPacket &pkt)
                 &temp.data, &temp.size, pkt.data, pkt.size,
                 pkt.pts, pkt.dts, pkt.pos);
 
-    av_parser_close(parser);
     return gErrorOccurred ? AVERROR_INVALIDDATA : res;
 }
 
@@ -209,7 +227,6 @@ int Prober::decode(AVPacket &packet)
         }
 
         AVFrame *frame = av_frame_alloc();
-        // while (res >= 0)
         while (res >= 0)
         {
             res = avcodec_receive_frame(codecCtx, frame);
@@ -249,9 +266,7 @@ int Prober::decode(AVPacket &packet)
 ReadResult Prober::readNextPacket()
 {
     AVPacket packet;
-    mFormatCtx->flags = 0;
     auto res = av_read_frame(mFormatCtx, &packet);
-    std::cout << "flags: " << mFormatCtx->flags << std::endl;
     if(res >= 0)
     {
         FFPacket *pkt(new FFPacket(packet));
